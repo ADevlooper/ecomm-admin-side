@@ -2,16 +2,18 @@ import { db } from "../db/client.js";
 import { products } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
+// READ ALL PRODUCTS
 export const getAllProducts = async (req, res) => {
   try {
     const result = await db.select().from(products);
     res.render("index", { products: result });
   } catch (err) {
-    console.error("FETCH ERROR:", err);
-    res.status(500).send("Error fetching products");
+    console.error(err);
+    res.status(500).send("Error loading products");
   }
 };
 
+// CREATE PRODUCT
 export const createProduct = async (req, res) => {
   try {
     const { name, description, price, rating, image_url } = req.body;
@@ -19,39 +21,45 @@ export const createProduct = async (req, res) => {
     await db.insert(products).values({
       name,
       description,
-      price: Number(price) || 0,
-      rating: Number(rating) || 0,
-      image_url,
+      price: Number(price),
+      rating: Number(rating),
+      image_url
     });
 
-    res.redirect("/");
+    res.send(`
+      <script>
+        alert("Product Created Successfully!");
+        window.location.href = "/";
+      </script>
+    `);
   } catch (err) {
-    console.error("CREATE ERROR:", err);
+    console.error(err);
     res.status(500).send("Error creating product");
   }
 };
 
+// GET PRODUCT BY ID
 export const getProductById = async (req, res) => {
   try {
-    const id = req.params.id;
-
     const result = await db
       .select()
       .from(products)
-      .where(eq(products.id, Number(id)));
+      .where(eq(products.id, req.params.id));
 
-    if (!result.length) return res.status(404).send("Product not found");
+    if (!result.length) {
+      return res.status(404).send("Product not found");
+    }
 
     res.render("edit", { product: result[0] });
   } catch (err) {
-    console.error("FETCH BY ID ERROR:", err);
+    console.error(err);
     res.status(500).send("Error fetching product");
   }
 };
 
+// UPDATE PRODUCT
 export const updateProduct = async (req, res) => {
   try {
-    const id = req.params.id;
     const { name, description, price, rating, image_url } = req.body;
 
     await db
@@ -61,26 +69,35 @@ export const updateProduct = async (req, res) => {
         description,
         price: Number(price),
         rating: Number(rating),
-        image_url,
+        image_url
       })
-      .where(eq(products.id, Number(id)));
+      .where(eq(products.id, req.params.id));
 
-    res.redirect("/");
+    res.send(`
+      <script>
+        alert("Product Updated Successfully!");
+        window.location.href = "/";
+      </script>
+    `);
   } catch (err) {
-    console.error("UPDATE ERROR:", err);
+    console.error(err);
     res.status(500).send("Error updating product");
   }
 };
 
+// DELETE PRODUCT
 export const deleteProduct = async (req, res) => {
   try {
-    const id = req.params.id;
+    await db.delete(products).where(eq(products.id, req.params.id));
 
-    await db.delete(products).where(eq(products.id, Number(id)));
-
-    res.redirect("/");
+    res.send(`
+      <script>
+        alert("Product Deleted Successfully!");
+        window.location.href = "/";
+      </script>
+    `);
   } catch (err) {
-    console.error("DELETE ERROR:", err);
+    console.error(err);
     res.status(500).send("Error deleting product");
   }
 };
