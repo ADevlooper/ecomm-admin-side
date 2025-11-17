@@ -2,7 +2,6 @@ import { db } from "../db/client.js";
 import { products } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
-// READ ALL PRODUCTS
 export const getAllProducts = async (req, res) => {
   try {
     const result = await db.select().from(products);
@@ -13,17 +12,21 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-// CREATE PRODUCT
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, rating, image_url } = req.body;
+    const { name, description, price, rating } = req.body;
+
+    let imageUrl = req.body.image_url;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
 
     await db.insert(products).values({
       name,
       description,
       price: Number(price),
       rating: Number(rating),
-      image_url
+      image_url: imageUrl,
     });
 
     res.send(`
@@ -38,7 +41,6 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// GET PRODUCT BY ID
 export const getProductById = async (req, res) => {
   try {
     const result = await db
@@ -46,9 +48,7 @@ export const getProductById = async (req, res) => {
       .from(products)
       .where(eq(products.id, req.params.id));
 
-    if (!result.length) {
-      return res.status(404).send("Product not found");
-    }
+    if (!result.length) return res.status(404).send("Product not found");
 
     res.render("edit", { product: result[0] });
   } catch (err) {
@@ -57,10 +57,14 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// UPDATE PRODUCT
 export const updateProduct = async (req, res) => {
   try {
     const { name, description, price, rating, image_url } = req.body;
+
+    let finalImageUrl = image_url;
+    if (req.file) {
+      finalImageUrl = `/uploads/${req.file.filename}`;
+    }
 
     await db
       .update(products)
@@ -69,7 +73,7 @@ export const updateProduct = async (req, res) => {
         description,
         price: Number(price),
         rating: Number(rating),
-        image_url
+        image_url: finalImageUrl,
       })
       .where(eq(products.id, req.params.id));
 
@@ -85,7 +89,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// DELETE PRODUCT
+
 export const deleteProduct = async (req, res) => {
   try {
     await db.delete(products).where(eq(products.id, req.params.id));
