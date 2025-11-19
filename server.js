@@ -17,6 +17,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+console.log("🚀 Server file loaded");
 
 
 app.set("view engine", "ejs");
@@ -24,7 +25,12 @@ app.set("views", path.join(__dirname, "views"));
 
 
 app.use("/", productsRouter);
+app.use((err, req, res, next) => {
+  console.error("🔥 SERVER ERROR:", err);
+  res.status(500).send("Internal Server Error");
+})
 
 app.listen(3000, () =>
   console.log("Server running on http://localhost:3000")
+  
 );
