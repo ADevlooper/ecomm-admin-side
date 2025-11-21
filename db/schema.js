@@ -38,16 +38,7 @@ export const categories = pgTable("categories", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
-/* ---------------------------
-   IMAGES
-   --------------------------- */
-export const images = pgTable("images", {
-  id: serial("id").primaryKey(),
-  url: varchar("url", { length: 1000 }).notNull(),
-  alt_text: varchar("alt_text", { length: 255 }),
-  filename: varchar("filename", { length: 500 }),
-  created_at: timestamp("created_at").defaultNow(),
-});
+
 
 /* ---------------------------
    JUNCTION TABLES
@@ -64,14 +55,26 @@ export const product_categories = pgTable(
   })
 );
 
-/* ---------------------------
-   FIXED: PRODUCT_IMAGES
-   --------------------------- */
+/* ---------------------------------
+   MERGED PRODUCT_IMAGES TABLE
+   --------------------------------- */
 export const product_images = pgTable("product_images", {
   id: serial("id").primaryKey(),
-  product_id: integer("product_id").notNull().references(() => products.id),
-  image_id: integer("image_id").notNull().references(() => images.id),
+
+  // Direct link to product
+  product_id: integer("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+
+  // Image info (merged from old images table)
+  url: varchar("url", { length: 1000 }).notNull(),
+  alt_text: varchar("alt_text", { length: 255 }),
+  filename: varchar("filename", { length: 500 }),
+
+  // Additional functionality (from old product_images)
   is_primary: boolean("is_primary").default(false),
   sort_order: integer("sort_order").default(0),
+
   created_at: timestamp("created_at").defaultNow(),
 });
+
