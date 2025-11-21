@@ -1,6 +1,3 @@
-// /db/schema.js
-// Drizzle ORM schema for ecomm-admin-side
-
 import {
   pgTable,
   serial,
@@ -38,10 +35,8 @@ export const categories = pgTable("categories", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
-
-
 /* ---------------------------
-   JUNCTION TABLES
+   PRODUCT_CATEGORIES (JUNCTION)
    --------------------------- */
 export const product_categories = pgTable(
   "product_categories",
@@ -56,22 +51,19 @@ export const product_categories = pgTable(
 );
 
 /* ---------------------------------
-   MERGED PRODUCT_IMAGES TABLE
+   MERGED PRODUCT_IMAGES
    --------------------------------- */
 export const product_images = pgTable("product_images", {
   id: serial("id").primaryKey(),
 
-  // Direct link to product
   product_id: integer("product_id")
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
 
-  // Image info (merged from old images table)
   url: varchar("url", { length: 1000 }).notNull(),
   alt_text: varchar("alt_text", { length: 255 }),
   filename: varchar("filename", { length: 500 }),
 
-  // Additional functionality (from old product_images)
   is_primary: boolean("is_primary").default(false),
   sort_order: integer("sort_order").default(0),
 

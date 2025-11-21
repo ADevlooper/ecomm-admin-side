@@ -10,23 +10,38 @@
   <div class="bg-white p-10 rounded-xl shadow-lg w-2/3">
     <h2 class="text-3xl font-bold mb-6">Add New Product</h2>
 
-    <form action="/create" method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form action="/products/create" method="POST" enctype="multipart/form-data" class="space-y-4">
 
-      <input required type="text" name="name"
-        placeholder="Product Name"
-        class="w-full p-3 border rounded" />
+      <input type="text" name="sku" placeholder="SKU (optional)" class="w-full p-3 border rounded" />
 
-      <textarea required name="description"
-        placeholder="Description"
-        class="w-full p-3 border rounded h-24"></textarea>
+      <div class="flex items-center gap-3">
+        <input type="checkbox" name="in_stock" id="in_stock" checked />
+        <label for="in_stock" class="font-medium">In Stock</label>
+      </div>
 
-      <input required type="number" name="price"
-        placeholder="Price"
-        class="w-full p-3 border rounded" />
+      <% if (typeof categories !== 'undefined' && categories.length) { %>
+        <div>
+          <p class="font-semibold mb-2">Categories</p>
+          <div class="grid grid-cols-3 gap-2">
+            <% categories.forEach(cat => { %>
+              <label class="inline-flex items-center gap-2">
+                <input type="checkbox" name="categories[]" value="<%= cat.id %>" />
+                <span><%= cat.name %></span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <input required type="text" name="name" placeholder="Product Name" class="w-full p-3 border rounded" />
+
+      <textarea required name="description" placeholder="Description" class="w-full p-3 border rounded h-24"></textarea>
+
+      <input required type="number" name="price" placeholder="Price" class="w-full p-3 border rounded" />
 
       <div>
-        <label class="block mb-1 font-semibold">Product Image</label>
-        <input type="file" name="image" accept="image/*" class="w-full" />
+        <label class="block mb-1 font-semibold">Product Images</label>
+        <input type="file" name="images" accept="image/*" multiple class="w-full" />
       </div>
 
       <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">

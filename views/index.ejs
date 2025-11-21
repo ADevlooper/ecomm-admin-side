@@ -9,21 +9,19 @@
 <body class="bg-gray-100">
   <div class="flex min-h-screen">
 
-    <!-- Sidebar -->
     <aside class="w-64 bg-gray-900 text-white p-6">
       <h1 class="text-2xl font-bold mb-6">E-Comm Admin</h1>
 
       <nav class="space-y-4">
-        <a href="/" class="block py-2 px-3 rounded bg-gray-700">Products table</a>
-        <a href="/new" class="block py-2 px-3 rounded hover:bg-gray-700">Add Product</a>
+        <a href="/" class="block py-2 px-3 rounded bg-gray-700">Products</a>
+        <a href="/products/new" class="block py-2 px-3 rounded hover:bg-gray-700">Add Product</a>
       </nav>
     </aside>
 
-    <!-- Main Content -->
     <main class="flex-1 p-10">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-3xl font-semibold">Products</h2>
-        <a href="/new"
+        <a href="/products/new"
            class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
           + Add Product
         </a>
@@ -55,12 +53,12 @@
                 <td class="p-3">₹<%= product.price %></td>
 
                 <td class="p-3 flex gap-3">
-                  <a href="/edit/<%= product.id %>"
+                  <a href="/products/edit/<%= product.id %>"
                      class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">
                     Edit
                   </a>
 
-                  <form action="/delete/<%= product.id %>" method="POST">
+                  <form action="/products/delete/<%= product.id %>" method="POST">
                     <button
                       class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                       onclick="return confirm('Delete this product?')">

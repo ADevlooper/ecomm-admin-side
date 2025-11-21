@@ -1,0 +1,112 @@
+How to check this project with Postman
+
+Prerequisites
+- Start the server from the project root:
+  pnpm start
+- By default the app listens at: http://localhost:3000
+- Make sure `uploads/` folder exists and is writable (used for file uploads)
+
+Base URL
+- http://localhost:3000
+
+Key endpoints (HTTP method + path)
+- Products (HTML views + form-driven endpoints)
+  - GET  /products                 -> list products (renders HTML)
+  - GET  /products/new             -> product creation form (HTML)
+  - POST /products/create          -> create product (multipart/form-data)
+      • form keys: name, description, price, image (file)
+      • response: redirects to `/products` (HTML)
+  - GET  /products/edit/:id        -> edit form (HTML)
+  - POST /products/update/:id      -> update product (multipart/form-data)
+      • same form keys as create
+      • response: redirects to `/products`
+  - POST /products/delete/:id      -> delete product (form submit)
+      • response: redirects to `/products`
+
+- Categories (JSON / HTML depending on view)
+  - GET    /categories             -> list categories (renders `categories` view)
+  - POST   /categories             -> create category
+      • body: x-www-form-urlencoded OR application/json
+      • fields: name, slug, description
+      • response: redirect to `/categories` (HTML)
+  - GET    /categories/:id         -> edit category form (HTML)
+  - PUT    /categories/:id         -> update category (application/json or urlencoded)
+  - DELETE /categories/:id         -> delete category
+
+- Images (JSON API endpoints)
+  - GET    /images                 -> list all image records (returns JSON)
+  - POST   /images                 -> upload/create image for a product (multipart/form-data)
+      • form keys: product_id (number), alt_text (optional), image (file)
+      • response: 201 JSON of created record
+  - GET    /images/:id             -> get image record (JSON)
+  - DELETE /images/:id             -> delete image record (JSON)
+
+Postman setup notes
+- For multipart file uploads (products and images):
+  1. Select method POST and set full URL (example `http://localhost:3000/products/create`).
+  2. In the "Body" tab choose `form-data`.
+  3. For each field, add a key: for files change the type from `Text` to `File` and choose a file from disk.
+     • Products: keys are `name`, `description`, `price`, and `image` (File).
+     • Images endpoint: keys are `product_id`, `alt_text` (optional), and `image` (File).
+  4. Send the request. For HTML endpoints that redirect, Postman may show the final HTML response.
+
+- For JSON endpoints (Images GET/DELETE, Categories PUT/DELETE optionally):
+  1. Choose method (GET, PUT, DELETE) and full URL.
+  2. For PUT/POST with JSON body: select Body -> raw -> JSON (application/json) and send JSON payload.
+     Example JSON for categories:
+     {
+       "name": "Example",
+       "slug": "example",
+       "description": "Example category"
+     }
+
+Example Postman requests
+- Create product (multipart/form-data)
+  Method: POST
+  URL: http://localhost:3000/products/create
+  Body -> form-data:
+    name: "Test product"
+    description: "A short description"
+    price: 199.99
+    image: (choose file)
+
+- Create category (JSON)
+  Method: POST
+  URL: http://localhost:3000/categories
+  Body -> raw -> JSON:
+    { "name": "Shoes", "slug": "shoes", "description": "Footwear" }
+
+- Upload image for product (multipart)
+  Method: POST
+  URL: http://localhost:3000/images
+  Body -> form-data:
+    product_id: 1
+    alt_text: "Front view"
+    image: (choose file)
+
+Troubleshooting & tips
+- Ensure the server is running and listen address/port match Postman URL.
+- 404 responses: check you used the correct route prefix (note products routes are mounted under `/products`).
+- File upload errors: verify Postman uses `form-data` and the file key matches `image` (the middleware is `upload.single('image')`).
+- Redirect responses: product create/update endpoints redirect to HTML views. If you want the raw response, disable automatic redirect following in Postman settings.
+- Large file errors (413): check upload limits in middleware (see `middlewares/upload.js`) and the server's body parser limits.
+- Check server logs/terminal for stack traces — helpful for diagnosing crashes or DB errors.
+
+Quick curl examples
+- Create product (multipart):
+  curl -v -X POST http://localhost:3000/products/create \
+    -F "name=CLI product" \
+    -F "description=desc" \
+    -F "price=9.99" \
+    -F "image=@/path/to/image.jpg"
+
+- Create category (JSON):
+  curl -X POST http://localhost:3000/categories \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Books","slug":"books","description":"Reading"}'
+
+If you want, I can:
+- Start the server and run a few Postman-like requests here to verify endpoints.
+- Add a Postman collection file (`.json`) with prebuilt requests for quick import.
+
+End of instructions

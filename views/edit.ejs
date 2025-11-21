@@ -10,7 +10,9 @@
   <div class="bg-white p-10 rounded-xl shadow-lg w-2/3">
     <h2 class="text-3xl font-bold mb-6">Edit Product</h2>
 
-    <form action="/edit/<%= product.id %>" method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form action="/products/update/<%= product.id %>" method="POST" enctype="multipart/form-data" class="space-y-4">
+
+      <input type="text" name="sku" value="<%= product.sku || '' %>" placeholder="SKU (optional)" class="w-full p-3 border rounded" />
 
       <input type="text" name="name" value="<%= product.name %>"
         class="w-full p-3 border rounded" />
@@ -21,14 +23,36 @@
       <input type="number" name="price" value="<%= product.price %>"
         class="w-full p-3 border rounded" />
 
+      <div class="flex items-center gap-3">
+        <input type="checkbox" name="in_stock" id="in_stock" <%= product.in_stock ? 'checked' : '' %> />
+        <label for="in_stock" class="font-medium">In Stock</label>
+      </div>
+
+      <% if (typeof categories !== 'undefined' && categories.length) { %>
+        <div>
+          <p class="font-semibold mb-2">Categories</p>
+          <div class="grid grid-cols-3 gap-2">
+            <% categories.forEach(cat => { %>
+              <label class="inline-flex items-center gap-2">
+                <input type="checkbox" name="categories[]" value="<%= cat.id %>" <%= selectedCategoryIds && selectedCategoryIds.includes(cat.id) ? 'checked' : '' %> />
+                <span><%= cat.name %></span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
 
 
       <div>
         <p class="font-semibold mb-2">Current Image:</p>
-        <% if (product.image_url) { %>
-          <img src="<%= product.image_url %>" class="w-32 h-32 rounded shadow mb-3" />
+        <% const primaryImage = (typeof images !== 'undefined' && images.length) ? (images.find(i => i.is_primary) || images[0]) : null; %>
+        <% if (primaryImage) { %>
+          <img src="<%= primaryImage.url %>" class="w-32 h-32 rounded shadow mb-3" />
+        <% } else { %>
+          <p class="text-gray-500">No Image</p>
         <% } %>
-        <input type="file" name="image" />
+        <input type="file" name="images" multiple />
       </div>
 
       <button class="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700">

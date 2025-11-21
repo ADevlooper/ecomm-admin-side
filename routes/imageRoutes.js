@@ -1,19 +1,24 @@
-// routes/productImageRoutes.js
 import express from "express";
 import { upload } from "../middlewares/upload.js";
 
 import {
-  getAllProductImages,
-  createProductImage,
-  getProductImageById,
-  deleteProductImage,
-} from "../controllers/productImagesController.js";
+  getAllImages,
+  createImageForProduct,
+  getImageById,
+  deleteImage,
+} from "../controllers/imagesController.js";
 
 const router = express.Router();
 
-router.get("/", getAllProductImages);
-router.post("/", upload.single("image"), createProductImage);
-router.get("/:id", getProductImageById);
-router.delete("/:id", deleteProductImage);
+router.get("/", getAllImages);
+
+// Upload image for a product
+router.post("/", upload.single("image"), createImageForProduct);
+
+// Fetch single image record
+router.get("/:id", getImageById);
+
+// Delete image record
+router.delete("/:id", deleteImage);
 
 export default router;

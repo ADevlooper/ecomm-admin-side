@@ -1,186 +1,132 @@
 import { db } from "../db/client.js";
-import { products, images, product_images } from "../db/schema.js";
-import { asc, eq } from "drizzle-orm";
+import { products, product_images, product_categories } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 
-/* -------------------------
-   GET ALL PRODUCTS (with primary image)
-------------------------- */
-export const getAllProducts = async (req, res) => {
-  try {
-    const rows = await db
-      .select({
-        id: products.id,
-        name: products.name,
-        price: products.price,
-        in_stock: products.in_stock,
-        primary_image: images.url, // may be null
-      })
-      .from(products)
-      .leftJoin(
-        product_images,
-        eq(products.id, product_images.product_id)
-      )
-      .leftJoin(
-        images,
-        eq(product_images.image_id, images.id)
-      )
-      .orderBy(asc(products.id));
-
-    return res.render("index", { products: rows });
-  } catch (err) {
-    console.error("getAllProducts ERROR:", err);
-    return res.status(500).send("Internal Server Error");
-  }
-};
-
-/* -------------------------
-   NEW PRODUCT PAGE
-------------------------- */
-export const getNewProductPage = (req, res) => {
-  try {
-    return res.render("new");
-  } catch (err) {
-    return res.status(500).send("Server error");
-  }
-};
-
-/* -------------------------
-   EDIT PRODUCT PAGE
-------------------------- */
-export const getEditProductPage = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const product = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, Number(id)));
-
-    if (!product.length) return res.status(404).send("Product not found");
-
-    const imgs = await db
-      .select()
-      .from(images)
-      .leftJoin(product_images, eq(images.id, product_images.image_id))
-      .where(eq(product_images.product_id, Number(id)));
-
-    return res.render("edit", { product: product[0], images: imgs });
-  } catch (err) {
-    console.error("getEditProductPage ERROR:", err);
-    return res.status(500).send("Server error");
-  }
-};
-
-/* -------------------------
-   CREATE PRODUCT (supports multiple images)
-------------------------- */
+/* -------------------------------------
+   CREATE PRODUCT
+------------------------------------- */
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price } = req.body;
+    const { sku, name, description, price, in_stock } = req.body;
+    // categories may be single id or array (from checkboxes named categories[])
+    let { categories } = req.body;
 
-    // create product
+    // normalize in_stock (checkbox sends 'on' when checked)
+    const inStockBool = in_stock === "on" || in_stock === "true" || in_stock === "1";
+
+    // Create product
     const newProduct = await db
       .insert(products)
       .values({
+        sku: sku || null,
         name,
         description,
-        price: price ? Number(price) : 0,
+        price,
+        in_stock: inStockBool,
       })
       .returning();
 
     const productId = newProduct[0].id;
 
-    // If images were uploaded
-    if (req.files && req.files.length > 0) {
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
+    // associate categories (if provided)
+    if (categories) {
+      if (!Array.isArray(categories)) categories = [categories];
+      for (const catId of categories) {
+        await db.insert(product_categories).values({
+          product_id: productId,
+          category_id: Number(catId),
+        });
+      }
+    }
 
-        const img = await db
-          .insert(images)
-          .values({
-            url: `/uploads/${file.filename}`,
-            filename: file.filename,
-          })
-          .returning();
+    // Upload images (if present) - support multiple files in req.files
+    if (req.files && req.files.length) {
+      // insert each uploaded file as a separate product_images row
+      for (let i = 0; i < req.files.length; i++) {
+        const f = req.files[i];
+        const filePath = `/uploads/${f.filename}`;
 
         await db.insert(product_images).values({
           product_id: productId,
-          image_id: img[0].id,
-          is_primary: i === 0, // first image = primary
+          url: filePath,
+          filename: f.filename,
+          is_primary: i === 0, // first uploaded image becomes primary
           sort_order: i,
         });
       }
     }
 
-    return res.redirect("/");
-  } catch (err) {
-    console.error("createProduct ERROR:", err);
-    return res.status(500).send("Server error");
+    res.redirect("/");
+  } catch (error) {
+    console.log("Error creating product:", error);
+    res.status(500).send("Error creating product");
   }
 };
 
-/* -------------------------
+/* -------------------------------------
    UPDATE PRODUCT
-------------------------- */
+------------------------------------- */
 export const updateProduct = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, description, price } = req.body;
+    const id = req.params.id;
+    const { sku, name, description, price, in_stock } = req.body;
+    let { categories } = req.body;
 
+    const inStockBool = in_stock === "on" || in_stock === "true" || in_stock === "1";
+
+    // Update product fields
     await db
       .update(products)
       .set({
+        sku: sku || null,
         name,
         description,
-        price: price ? Number(price) : 0,
+        price,
+        in_stock: inStockBool,
       })
-      .where(eq(products.id, Number(id)));
+      .where(eq(products.id, id));
 
-    // If new images uploaded
-    if (req.files && req.files.length > 0) {
+    // Image upload (support multiple files in req.files)
+    if (req.files && req.files.length) {
+      // Make older images non-primary first
+      await db
+        .update(product_images)
+        .set({ is_primary: false })
+        .where(eq(product_images.product_id, id));
+
+      // Insert each uploaded file (first becomes primary)
       for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-
-        const img = await db
-          .insert(images)
-          .values({
-            url: `/uploads/${file.filename}`,
-            filename: file.filename,
-          })
-          .returning();
+        const f = req.files[i];
+        const filePath = `/uploads/${f.filename}`;
 
         await db.insert(product_images).values({
-          product_id: Number(id),
-          image_id: img[0].id,
-          is_primary: false,
+          product_id: id,
+          url: filePath,
+          filename: f.filename,
+          is_primary: i === 0,
           sort_order: i,
         });
       }
     }
 
-    return res.redirect("/");
-  } catch (err) {
-    console.error("updateProduct ERROR:", err);
-    return res.status(500).send("Server error");
-  }
-};
+    // Update categories: remove old associations then insert new ones
+    if (categories) {
+      // normalize
+      if (!Array.isArray(categories)) categories = [categories];
 
-/* -------------------------
-   DELETE PRODUCT (+ images)
-------------------------- */
-export const deleteProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
+      await db.delete(product_categories).where(eq(product_categories.product_id, id));
 
-    // remove relationships
-    await db.delete(product_images).where(eq(product_images.product_id, Number(id)));
+      for (const catId of categories) {
+        await db.insert(product_categories).values({
+          product_id: id,
+          category_id: Number(catId),
+        });
+      }
+    }
 
-    // remove product
-    await db.delete(products).where(eq(products.id, Number(id)));
-
-    return res.redirect("/");
-  } catch (err) {
-    console.error("deleteProduct ERROR:", err);
-    return res.status(500).send("Server error");
+    res.redirect("/");
+  } catch (error) {
+    console.log("Error updating product:", error);
+    res.status(500).send("Error updating product");
   }
 };
