@@ -68,7 +68,7 @@ export const product_categories = pgTable(
    FIXED: PRODUCT_IMAGES
    --------------------------- */
 export const product_images = pgTable("product_images", {
-  id: serial("id").primaryKey(), // ⭐ ADDED PRIMARY KEY
+  id: serial("id").primaryKey(),
   product_id: integer("product_id").notNull().references(() => products.id),
   image_id: integer("image_id").notNull().references(() => images.id),
   is_primary: boolean("is_primary").default(false),
