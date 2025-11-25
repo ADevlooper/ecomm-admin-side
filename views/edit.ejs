@@ -1,64 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Edit Product</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 flex justify-center items-center min-h-screen">
-  <div class="bg-white p-10 rounded-xl shadow-lg w-2/3">
-    <h2 class="text-3xl font-bold mb-6">Edit Product</h2>
+<body class="bg-gray-50">
+  <div class="max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-md mt-10">
+    <h2 class="text-2xl font-bold mb-6 text-center">Edit Product</h2>
 
-    <form action="/products/update/<%= product.id %>" method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form action="/products/update/<%= product.id %>" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-      <input type="text" name="sku" value="<%= product.sku || '' %>" placeholder="SKU (optional)" class="w-full p-3 border rounded" />
-
-      <input type="text" name="name" value="<%= product.name %>"
-        class="w-full p-3 border rounded" />
-
-      <textarea name="description"
-        class="w-full p-3 border rounded h-24"><%= product.description %></textarea>
-
-      <input type="number" name="price" value="<%= product.price %>"
-        class="w-full p-3 border rounded" />
-
-      <div class="flex items-center gap-3">
-        <input type="checkbox" name="in_stock" id="in_stock" <%= product.in_stock ? 'checked' : '' %> />
-        <label for="in_stock" class="font-medium">In Stock</label>
+      <div class="mb-4">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Name</label>
+        <input required type="text" name="name" value="<%= product.name %>" class="w-full p-2 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
       </div>
 
-      <% if (typeof categories !== 'undefined' && categories.length) { %>
-        <div>
-          <p class="font-semibold mb-2">Categories</p>
-          <div class="grid grid-cols-3 gap-2">
-            <% categories.forEach(cat => { %>
-              <label class="inline-flex items-center gap-2">
-                <input type="checkbox" name="categories[]" value="<%= cat.id %>" <%= selectedCategoryIds && selectedCategoryIds.includes(cat.id) ? 'checked' : '' %> />
-                <span><%= cat.name %></span>
-              </label>
+      <div class="mb-4">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">SKU (optional)</label>
+        <input type="text" name="sku" value="<%= product.sku || '' %>" class="w-full p-2 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+      </div>
+
+      <div class="mb-4">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Category</label>
+        <select name="category" required class="w-full p-2 border border-black rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+          <option value="">Select category</option>
+          <option value="Electronics" <%= product.category === 'Electronics' ? 'selected' : '' %>>Electronics</option>
+          <option value="Furniture" <%= product.category === 'Furniture' ? 'selected' : '' %>>Furniture</option>
+          <option value="Groceries" <%= product.category === 'Groceries' ? 'selected' : '' %>>Groceries</option>
+          <option value="Appliances" <%= product.category === 'Appliances' ? 'selected' : '' %>>Appliances</option>
+          <option value="Fashion" <%= product.category === 'Fashion' ? 'selected' : '' %>>Fashion</option>
+          <option value="Others" <%= product.category === 'Others' ? 'selected' : '' %>>Others</option>
+        </select>
+      </div>
+
+      <div class="mb-4 flex items-center gap-3">
+        <input type="checkbox" name="in_stock" id="out_of_stock" class="h-5 w-5 text-blue-600 accent-blue-600" <%= !product.in_stock ? 'checked' : '' %> />
+        <label for="out_of_stock" class="block mb-1 text-sm font-semibold text-gray-800">Out of Stock</label>
+      </div>
+
+      <div class="mb-4">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Price</label>
+        <input required type="number" name="price" value="<%= product.price %>" class="w-full p-2 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+      </div>
+
+      <div class="mb-4 md:col-span-2">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Tags</label>
+        <input id="tag-input" type="text" placeholder="Type a tag and press Enter" class="w-full p-2 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+        <div id="tags-container" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+
+      <div class="mb-4 md:col-span-2">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Description</label>
+        <textarea required name="description" class="resize-none w-full h-32 p-3 border border-black rounded-lg focus:ring-2 focus:ring-blue-500"><%= product.description %></textarea>
+      </div>
+
+      <div class="mb-4 md:col-span-2">
+        <label class="block mb-1 text-sm font-semibold text-gray-800">Product Images</label>
+        <input type="file" name="images" accept="image/*" multiple class="w-full border border-black rounded-lg p-2 bg-gray-50 cursor-pointer" />
+        <p class="text-sm text-gray-500 mt-2">Current images:</p>
+        <div class="flex gap-2 mt-2">
+          <% if (product.images && product.images.length > 0) { %>
+            <% product.images.forEach(img => { %>
+              <div class="w-20 h-20 bg-cover bg-center rounded" style="background-image: url('<%= img.url %>')"></div>
             <% }) %>
-          </div>
+          <% } %>
         </div>
-      <% } %>
-
-
-
-      <div>
-        <p class="font-semibold mb-2">Current Image:</p>
-        <% const primaryImage = (typeof images !== 'undefined' && images.length) ? (images.find(i => i.is_primary) || images[0]) : null; %>
-        <% if (primaryImage) { %>
-          <img src="<%= primaryImage.url %>" class="w-32 h-32 rounded shadow mb-3" />
-        <% } else { %>
-          <p class="text-gray-500">No Image</p>
-        <% } %>
-        <input type="file" name="images" multiple />
       </div>
 
-      <button class="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700">
-        Update Product
-      </button>
+      <div class="mb-4 md:col-span-2 flex gap-4">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Update Product</button>
+        <a href="/" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition">Cancel</a>
+      </div>
     </form>
   </div>
+
+  <script>
+    (function(){
+      const input = document.getElementById('tag-input');
+      const container = document.getElementById('tags-container');
+      const form = document.querySelector('form[action^="/products/update/"]');
+      const productId = '<%= product.id %>';
+
+      function createHiddenInput(tagId){
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'tags[]';
+        hidden.value = tagId;
+        return hidden;
+      }
+
+      function makePill(tag, removable=true){
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm';
+        pill.dataset.tagId = tag.id;
+        pill.innerHTML = `<span>${tag.name}</span> <button type="button" aria-label="remove" class="ml-2 text-gray-600">×</button>`;
+
+        const btn = pill.querySelector('button');
+        if (removable) {
+          btn.addEventListener('click', async () => {
+            try {
+              const res = await fetch('/tags/remove', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ productId: Number(productId), tagId: Number(tag.id) })
+              });
+              if (!res.ok) throw new Error('Failed to remove tag');
+            } catch (err) {
+              console.error(err);
+              alert('Could not remove tag');
+              return;
+            }
+
+            const hidden = form.querySelector(`input[name="tags[]"][value="${tag.id}"]`);
+            if (hidden) hidden.remove();
+            pill.remove();
+          });
+        } else {
+          btn.remove();
+        }
+
+        return pill;
+      }
+
+      async function onAddTag(name){
+        name = name.trim();
+        if (!name) return;
+        if (container.children.length >= 10) { alert('Maximum 10 tags allowed'); return; }
+
+        try {
+          const res = await fetch('/tags/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
+          if (!res.ok) throw new Error('Failed to create tag');
+          const tag = await res.json();
+
+          const attach = await fetch('/tags/attach', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ productId: Number(productId), tagId: Number(tag.id) }) });
+          if (!attach.ok) throw new Error('Failed to attach tag');
+
+          if (form.querySelector(`input[name="tags[]"][value="${tag.id}"]`)) return;
+
+          const pill = makePill(tag, true);
+          container.appendChild(pill);
+          form.appendChild(createHiddenInput(tag.id));
+        } catch (err) {
+          console.error(err);
+          alert('Could not add tag');
+        }
+      }
+
+      async function preload(){
+        try {
+          const res = await fetch(`/tags/product/${productId}`);
+          if (!res.ok) return;
+          const rows = await res.json();
+          for (const tag of rows) {
+            const pill = makePill(tag, true);
+            container.appendChild(pill);
+            form.appendChild(createHiddenInput(tag.id));
+          }
+        } catch (err) {
+          console.error('Failed to preload tags', err);
+        }
+      }
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter'){
+          e.preventDefault();
+          const name = input.value;
+          input.value = '';
+          onAddTag(name);
+        }
+      });
+
+      preload();
+    })();
+  </script>
 </body>
 </html>

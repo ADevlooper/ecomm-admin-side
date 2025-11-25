@@ -64,7 +64,20 @@ router.get("/edit/:id", async (req, res) => {
 
   const selectedCategoryIds = selected.map((s) => s.category_id);
 
-  res.render("edit", { product: product[0], images, categories: cats, selectedCategoryIds });
+  // fetch the product's first linked category name (if any)
+  const linked = await db
+    .select({ name: categories.name })
+    .from(product_categories)
+    .leftJoin(categories, eq(product_categories.category_id, categories.id))
+    .where(eq(product_categories.product_id, id));
+
+  const linkedCategoryName = linked && linked.length ? linked[0].name : null;
+
+  const productObj = product[0] || {};
+  productObj.category = linkedCategoryName;
+  productObj.images = images || [];  // Always attach images array to product object
+
+  res.render("edit", { product: productObj, categories: cats, selectedCategoryIds });
 });
 
 // Update product (accept multiple images)

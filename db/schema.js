@@ -31,7 +31,6 @@ export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 150 }).notNull().unique(),
   slug: varchar("slug", { length: 150 }).notNull().unique(),
-  description: text("description"),
   created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -41,7 +40,7 @@ export const categories = pgTable("categories", {
 export const product_categories = pgTable(
   "product_categories",
   {
-    product_id: integer("product_id").notNull().references(() => products.id),
+    product_id: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
     category_id: integer("category_id").notNull().references(() => categories.id),
     created_at: timestamp("created_at").defaultNow(),
   },
@@ -69,4 +68,29 @@ export const product_images = pgTable("product_images", {
 
   created_at: timestamp("created_at").defaultNow(),
 });
+
+/* ---------------------------
+   TAGS
+   --------------------------- */
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 150 }).notNull().unique(),
+  slug: varchar("slug", { length: 150 }).unique(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+/* ---------------------------
+   PRODUCT_TAGS (JUNCTION)
+   --------------------------- */
+export const product_tags = pgTable(
+  "product_tags",
+  {
+    product_id: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    tag_id: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
+    created_at: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey(table.product_id, table.tag_id),
+  })
+);
 

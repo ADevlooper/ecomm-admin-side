@@ -3,83 +3,38 @@ import { db } from "../db/client.js";
 import { categories } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
-// GET all categories
-export const getAllCategories = async (req, res) => {
+// Only serve the six predefined categories. If any are missing, create them.
+const PREDEFINED = ["Electronics", "Furniture", "Groceries", "Appliances", "Fashion", "Others"];
+
+async function ensurePredefinedCategories() {
+  const results = [];
+  for (const name of PREDEFINED) {
+    const rows = await db.select().from(categories).where(eq(categories.name, name)).catch(() => []);
+    if (rows && rows.length) {
+      results.push(rows[0]);
+    } else {
+      const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "");
+      try {
+        const inserted = await db.insert(categories).values({ name, slug }).returning();
+        if (inserted && inserted.length) results.push(inserted[0]);
+      } catch (err) {
+        // in rare race conditions, try to read it again
+        const retry = await db.select().from(categories).where(eq(categories.name, name)).catch(() => []);
+        if (retry && retry.length) results.push(retry[0]);
+      }
+    }
+  }
+  return results;
+}
+
+async function getAllCategories(req, res) {
   try {
-    const rows = await db.select().from(categories);
-    res.render("categories", { categories: rows });
+    const rows = await ensurePredefinedCategories();
+    return res.render("categories", { categories: rows, error: null });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Failed to load categories");
+    return res.status(500).render("categories", { categories: [], error: "Failed to load categories" });
   }
-};
+}
 
-// Create category
-export const createCategory = async (req, res) => {
-  try {
-    const { name, slug, description } = req.body;
-
-    await db.insert(categories).values({
-      name,
-      slug,
-      description,
-    });
-
-    res.redirect("/categories");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Failed to create category");
-  }
-};
-
-// Get category by id
-export const getCategoryById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const row = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.id, id));
-
-    if (row.length === 0)
-      return res.status(404).send("Category not found");
-
-    res.render("editCategory", { category: row[0] });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Failed to fetch category");
-  }
-};
-
-// Update category
-export const updateCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, slug, description } = req.body;
-
-    await db
-      .update(categories)
-      .set({ name, slug, description })
-      .where(eq(categories.id, id));
-
-    res.redirect("/categories");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Failed to update category");
-  }
-};
-
-// Delete category
-export const deleteCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await db.delete(categories).where(eq(categories.id, id));
-
-    res.redirect("/categories");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Failed to delete category");
-  }
-};
+export { getAllCategories };

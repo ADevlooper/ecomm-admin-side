@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import productRoutes from "./routes/productsRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
+import tagRoutes from "./routes/tagsRoutes.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use("/products", productRoutes);
 app.use("/categories", categoryRoutes);
 app.use("/images", imageRoutes);
+app.use("/tags", tagRoutes);
 
 // Home route
 app.get("/", (req, res) => {
