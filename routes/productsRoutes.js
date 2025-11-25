@@ -38,8 +38,9 @@ router.get("/new", async (req, res) => {
   res.render("new", { categories: cats });
 });
 
-// Create product (accept multiple images)
-router.post("/create", upload.array("images", 10), createProduct);
+// Create product (accept single 'image' OR multiple 'images')
+// Use upload.any() to accept either field name coming from clients (image or images)
+router.post("/create", upload.any(), createProduct);
 
 // Show EDIT form
 router.get("/edit/:id", async (req, res) => {
@@ -80,8 +81,8 @@ router.get("/edit/:id", async (req, res) => {
   res.render("edit", { product: productObj, categories: cats, selectedCategoryIds });
 });
 
-// Update product (accept multiple images)
-router.post("/update/:id", upload.array("images", 10), updateProduct);
+// Update product (accept single 'image' OR multiple 'images')
+router.post("/update/:id", upload.any(), updateProduct);
 
 // Delete product
 router.post("/delete/:id", async (req, res) => {

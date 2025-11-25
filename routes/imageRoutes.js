@@ -1,5 +1,5 @@
 import express from "express";
-import { upload } from "../middlewares/upload.js";
+import { uploadSingle } from "../middlewares/upload.js";
 
 import {
   getAllImages,
@@ -13,7 +13,8 @@ const router = express.Router();
 router.get("/", getAllImages);
 
 // Upload image for a product
-router.post("/", upload.single("image"), createImageForProduct);
+// Upload single image for a product (field name: 'image')
+router.post("/products/create", uploadSingle, createImageForProduct);
 
 // Fetch single image record
 router.get("/:id", getImageById);

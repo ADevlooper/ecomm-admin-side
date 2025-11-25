@@ -75,11 +75,21 @@ export const createProduct = async (req, res) => {
       }
     }
 
-    // Upload images (if present) - support multiple files in req.files
-    if (req.files && req.files.length) {
-      // insert each uploaded file as a separate product_images row
-      for (let i = 0; i < req.files.length; i++) {
-        const f = req.files[i];
+    // Upload images (support multiple files in req.files array, single req.file, or fields object from multer.fields)
+    const uploadedFiles = [];
+    if (Array.isArray(req.files) && req.files.length) {
+      uploadedFiles.push(...req.files);
+    } else if (req.file) {
+      uploadedFiles.push(req.file);
+    } else if (req.files && typeof req.files === 'object') {
+      // multer.fields() produces an object mapping fieldname -> array
+      if (Array.isArray(req.files.images) && req.files.images.length) uploadedFiles.push(...req.files.images);
+      if (Array.isArray(req.files.image) && req.files.image.length) uploadedFiles.push(...req.files.image);
+    }
+
+    if (uploadedFiles.length) {
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const f = uploadedFiles[i];
         const filePath = `/uploads/${f.filename}`;
 
         await db.insert(product_images).values({
@@ -135,18 +145,27 @@ export const updateProduct = async (req, res) => {
       return res.status(500).render("edit", { product: product[0] || null, images, categories: [], selectedCategoryIds: [], error: "Failed to update product" });
     }
 
-    // Image upload (support multiple files in req.files)
-    if (req.files && req.files.length) {
+    // Image upload (support multiple files in req.files array, single req.file, or fields object from multer.fields)
+    const uploadedFiles = [];
+    if (Array.isArray(req.files) && req.files.length) {
+      uploadedFiles.push(...req.files);
+    } else if (req.file) {
+      uploadedFiles.push(req.file);
+    } else if (req.files && typeof req.files === 'object') {
+      if (Array.isArray(req.files.images) && req.files.images.length) uploadedFiles.push(...req.files.images);
+      if (Array.isArray(req.files.image) && req.files.image.length) uploadedFiles.push(...req.files.image);
+    }
+
+    if (uploadedFiles.length) {
       try {
         // Make older images non-primary first
         await db
           .update(product_images)
           .set({ is_primary: false })
           .where(eq(product_images.product_id, id));
-
         // Insert each uploaded file (first becomes primary)
-        for (let i = 0; i < req.files.length; i++) {
-          const f = req.files[i];
+        for (let i = 0; i < uploadedFiles.length; i++) {
+          const f = uploadedFiles[i];
           const filePath = `/uploads/${f.filename}`;
 
           await db.insert(product_images).values({
